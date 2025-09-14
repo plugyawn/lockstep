@@ -108,14 +108,24 @@ class LockstepController:
 
         # Determine which block to process
         if self.cfg.mode == "jacobi":
-            # Process both blocks in parallel
+            # Process both blocks in parallel (true lockstep)
             x = self._process_block(x, "both")
         else:  # gauss_seidel
-            # Alternate between R and A blocks
-            if self._micro_sweep % 2 == 0:
-                x = self._process_block(x, "r")
-            else:
-                x = self._process_block(x, "a")
+            # For true lockstep in Gauss-Seidel, process R first, then A in same step
+            # This ensures both blocks progress together
+            x_after_r = self._process_block(x, "r")
+            # Update confidence based on R block changes for coupling
+            if (x_after_r != x).any():
+                # Recalculate confidence after R updates (simulating R→A influence)
+                with torch.no_grad():
+                    # Add small boost to A confidence when R has made progress
+                    self._last_conf = F.softmax(logits, dim=-1).max(dim=-1)[0]
+                    if self.cfg.a_span:
+                        # Boost A confidence slightly based on R progress
+                        r_progress = (x_after_r != x).float().mean()
+                        a_start, a_end = self.cfg.a_span
+                        self._last_conf[:, a_start:a_end] += r_progress * 0.1
+            x = self._process_block(x_after_r, "a")
             self._micro_sweep += 1
 
         return x
@@ -135,7 +145,7 @@ class LockstepController:
         device = x.device
 
         # Get mask token ID (assuming it's stored in tokenizer)
-        mask_id = self.tokenizer.mask_token_id if self.tokenizer else 103  # BERT [MASK] default
+        mask_id = self.tokenizer.mask_token_id if self.tokenizer and hasattr(self.tokenizer, 'mask_token_id') else 103
 
         # Create mask for currently masked positions
         is_masked = (x == mask_id)
@@ -145,61 +155,80 @@ class LockstepController:
 
         # Process R block
         if block in ["r", "both"] and self.cfg.r_span:
-            lo, hi = self.cfg.r_span
-            # Add halo for context
-            lo = max(0, lo - self.cfg.halo)
-            hi = min(seq_len, hi + self.cfg.halo)
+            r_start, r_end = self.cfg.r_span
+            # Don't use halo for the actual block boundaries, only for context
 
-            # Get confidence in this region
-            block_conf = self._last_conf[:, lo:hi]
-            block_masked = is_masked[:, lo:hi]
+            # Get confidence in this region (without halo)
+            block_conf = self._last_conf[:, r_start:r_end]
+            block_masked = is_masked[:, r_start:r_end]
 
-            # Select high-confidence tokens
+            # Select high-confidence masked tokens
             candidates = block_masked & (block_conf >= self.cfg.tau_r)
 
             # Apply fill rate cap
-            max_fill = max(1, int(self.cfg.max_fill_frac * block_masked.sum().item()))
-            if candidates.sum() > max_fill:
-                # Keep only top-k confident tokens
-                conf_flat = block_conf[block_masked].flatten()
-                if conf_flat.numel() > 0:
-                    topk_vals, topk_idx = conf_flat.topk(min(max_fill, conf_flat.numel()))
-                    # Create mask for top-k positions
-                    selected = torch.zeros_like(conf_flat, dtype=torch.bool)
-                    selected[topk_idx] = True
-                    # Map back to 2D
-                    candidates[block_masked] = selected
+            num_masked = block_masked.sum().item()
+            if num_masked > 0:
+                max_fill = max(1, int(self.cfg.max_fill_frac * num_masked))
+                num_candidates = candidates.sum().item()
 
-            commit_mask[:, lo:hi] = candidates
+                if num_candidates > max_fill:
+                    # Keep only top-k confident tokens among the masked ones
+                    # Get confidence values for masked positions only
+                    conf_masked = block_conf[block_masked]
+
+                    if conf_masked.numel() > 0:
+                        # Get top-k indices
+                        topk_vals, topk_idx = conf_masked.topk(min(max_fill, conf_masked.numel()))
+
+                        # Create new candidates mask
+                        new_candidates = torch.zeros_like(block_masked)
+                        # Find positions of masked tokens
+                        masked_positions = block_masked.nonzero(as_tuple=True)
+                        # Set top-k positions
+                        for idx in topk_idx:
+                            batch_idx = masked_positions[0][idx]
+                            pos_idx = masked_positions[1][idx]
+                            new_candidates[batch_idx, pos_idx] = True
+
+                        candidates = new_candidates
+
+            commit_mask[:, r_start:r_end] = candidates
 
         # Process A block
         if block in ["a", "both"] and self.cfg.a_span:
-            lo, hi = self.cfg.a_span
-            # Add halo for context
-            lo = max(0, lo - self.cfg.halo)
-            hi = min(seq_len, hi + self.cfg.halo)
+            a_start, a_end = self.cfg.a_span
 
             # Get confidence in this region
-            block_conf = self._last_conf[:, lo:hi]
-            block_masked = is_masked[:, lo:hi]
+            block_conf = self._last_conf[:, a_start:a_end]
+            block_masked = is_masked[:, a_start:a_end]
 
-            # Select high-confidence tokens
+            # Select high-confidence masked tokens
             candidates = block_masked & (block_conf >= self.cfg.tau_a)
 
             # Apply fill rate cap
-            max_fill = max(1, int(self.cfg.max_fill_frac * block_masked.sum().item()))
-            if candidates.sum() > max_fill:
-                # Keep only top-k confident tokens
-                conf_flat = block_conf[block_masked].flatten()
-                if conf_flat.numel() > 0:
-                    topk_vals, topk_idx = conf_flat.topk(min(max_fill, conf_flat.numel()))
-                    # Create mask for top-k positions
-                    selected = torch.zeros_like(conf_flat, dtype=torch.bool)
-                    selected[topk_idx] = True
-                    # Map back to 2D
-                    candidates[block_masked] = selected
+            num_masked = block_masked.sum().item()
+            if num_masked > 0:
+                max_fill = max(1, int(self.cfg.max_fill_frac * num_masked))
+                num_candidates = candidates.sum().item()
 
-            commit_mask[:, lo:hi] |= candidates
+                if num_candidates > max_fill:
+                    # Keep only top-k confident tokens
+                    conf_masked = block_conf[block_masked]
+
+                    if conf_masked.numel() > 0:
+                        topk_vals, topk_idx = conf_masked.topk(min(max_fill, conf_masked.numel()))
+
+                        # Create new candidates mask
+                        new_candidates = torch.zeros_like(block_masked)
+                        masked_positions = block_masked.nonzero(as_tuple=True)
+                        for idx in topk_idx:
+                            batch_idx = masked_positions[0][idx]
+                            pos_idx = masked_positions[1][idx]
+                            new_candidates[batch_idx, pos_idx] = True
+
+                        candidates = new_candidates
+
+            commit_mask[:, a_start:a_end] |= candidates
 
         # Record commit trace for visualization
         self._commit_trace.append(commit_mask.cpu().clone())
