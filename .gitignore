@@ -70,4 +70,4 @@ temp/
 scratch/
 
 # uv
-uv.lock.local
+uv.lock.localvendor/Dream/
