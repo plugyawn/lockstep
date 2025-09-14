@@ -1,0 +1,15 @@
+# Dream model configuration
+hf_name: Dream-org/Dream-v0-Instruct-7B
+dtype: bfloat16
+device: cuda
+
+# Generation parameters
+generation:
+  max_new_tokens: 512
+  steps: 12
+  temperature: 0.1
+  top_p: 0.95
+  alg: entropy   # confidence-based decoding
+  alg_temp: 0.0
+  output_history: true
+  return_dict_in_generate: true

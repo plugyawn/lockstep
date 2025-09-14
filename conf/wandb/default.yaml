@@ -1,0 +1,19 @@
+# Weights & Biases configuration
+enabled: true
+project: dream-lockstep-rl
+entity: ${oc.env:WANDB_ENTITY,your_team}
+tags:
+  - dream
+  - lockstep
+  - dllm
+log_histograms: true
+log_artifacts: true
+log_code: true
+
+# Metrics to track
+log_metrics:
+  - tokens_per_sec
+  - fill_rate_per_step
+  - confidence_per_block
+  - gpu_utilization
+  - memory_usage

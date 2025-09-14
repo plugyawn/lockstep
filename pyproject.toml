@@ -1,0 +1,49 @@
+[project]
+name = "dllm-lockstep"
+version = "0.1.0"
+description = "Dream-7B with lockstep R/A decoding and RL training"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.5.1",
+    "transformers>=4.46.2",
+    "sentencepiece",
+    "accelerate",
+    "hydra-core>=1.3.2",
+    "wandb",
+    "pytest",
+    "imageio",
+    "matplotlib",
+    "rich",
+    "tqdm",
+    "psutil",
+    "evalplus>=0.2.1",
+    "verl>=0.5",
+    "ray[default]",
+    "numpy",
+    "omegaconf",
+    "pillow",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "flake8",
+    "mypy",
+    "pre-commit",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+line_length = 100

@@ -1,0 +1,11 @@
+# Lockstep R/A decoding configuration
+mode: gauss_seidel    # or jacobi
+tau_r: 0.90           # confidence threshold for reasoning block
+tau_a: 0.92           # confidence threshold for answer block
+max_fill_frac: 0.4    # max fraction of tokens to fill per step
+halo: 8               # context window around blocks
+
+# Block markers
+block_markers:
+  r_open: "[R]"
+  a_open: "[A]"

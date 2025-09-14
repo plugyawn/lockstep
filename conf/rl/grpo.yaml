@@ -1,0 +1,45 @@
+# GRPO (Group Relative Policy Optimization) configuration
+algorithm: grpo
+num_generations: 6           # K candidates per prompt
+global_batch_size: 24
+micro_batch_size: 4
+gradient_accumulation_steps: 6
+
+# Training hyperparameters
+learning_rate: 1e-5
+weight_decay: 0.01
+max_grad_norm: 1.0
+warmup_steps: 100
+num_train_epochs: 3
+
+# LoRA configuration for parameter efficiency
+lora:
+  enabled: true
+  rank: 32
+  alpha: 64
+  dropout: 0.1
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+# Reward configuration
+reward:
+  type: evalplus    # Use EvalPlus for code verification
+  coupling_bonus: 0.1  # Bonus for R→A coupling
+  temperature: 0.5
+
+# Actor-learner configuration
+actor:
+  num_actors: 8
+  actor_batch_size: 3
+  rollout_chunk_size: 16
+
+learner:
+  optimizer: adamw
+  scheduler: cosine
+  max_steps: 10000

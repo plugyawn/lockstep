@@ -1,0 +1,26 @@
+# Hardware configuration for 8x H200 GPUs
+num_gpus: 8
+device_ids: [0, 1, 2, 3, 4, 5, 6, 7]
+
+torch_distributed:
+  backend: nccl
+  init_method: env://
+  world_size: ${hardware.num_gpus}
+
+# Environment variables for optimal performance
+env:
+  NCCL_P2P_DISABLE: "0"
+  NCCL_IB_DISABLE: "0"
+  CUDA_DEVICE_MAX_CONNECTIONS: "1"
+  TORCH_SHOW_CPP_STACKTRACES: "1"
+  TORCH_DISTRIBUTED_DEBUG: "DETAIL"
+
+# Memory management
+memory:
+  gradient_checkpointing: true
+  mixed_precision: bf16
+
+profiling:
+  enable_profiler: false
+  profile_memory: false
+  profile_steps: [10, 20]

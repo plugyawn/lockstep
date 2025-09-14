@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs and outputs
+*.log
+outputs/
+multirun/
+wandb/
+runs/
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+
+# Data
+data/
+*.csv
+*.json
+*.pkl
+*.h5
+*.hdf5
+
+# Media files
+*.gif
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.avi
+
+# Configs (local overrides)
+conf/local/
+*.local.yaml
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Dream/vendor
+vendor/Dream/.git/
+
+# Papers (keep docs structure but ignore PDFs)
+docs/*.pdf
+
+# Misc
+.cache/
+tmp/
+temp/
+scratch/
+
+# uv
+uv.lock.local
