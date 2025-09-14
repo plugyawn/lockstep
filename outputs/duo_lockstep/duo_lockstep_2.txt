@@ -1,4 +1,0 @@
-Prompt: The fundamental principle of diffusion models is
-Steps: 9
-Final text:
-The fundamental principle of diffusion models is

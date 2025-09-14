@@ -1,4 +1,0 @@
-Prompt: Step by step, let's analyze
-Steps: 9
-Final text:
-Step by step, let's analyze

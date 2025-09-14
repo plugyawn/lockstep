@@ -71,3 +71,4 @@ scratch/
 
 # uv
 uv.lock.localvendor/Dream/
+vendor/
