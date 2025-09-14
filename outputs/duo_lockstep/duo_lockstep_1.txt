@@ -1,0 +1,4 @@
+Prompt: To solve this complex problem, we need to
+Steps: 9
+Final text:
+To solve this complex problem, we need to

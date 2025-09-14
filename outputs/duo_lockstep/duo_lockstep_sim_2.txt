@@ -1,0 +1,6 @@
+Prompt: The fundamental principle of diffusion models is
+Steps: 13
+Final R fill: 40.0%
+Final A fill: 100.0%
+Final text:
+The fundamental principle of diffusion models is         consider evaluate determine understand recognize understand understand evaluate             hence solution consequently result therefore result outcome outcome result thus thus solution thus hence therefore              

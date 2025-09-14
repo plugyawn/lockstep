@@ -1,0 +1,6 @@
+Prompt: To solve this complex problem, we need to
+Steps: 13
+Final R fill: 40.0%
+Final A fill: 100.0%
+Final text:
+To solve this complex problem, we need to        evaluate evaluate determine understand process establish consider determine             thus answer outcome therefore accordingly hence solution thus therefore solution hence thus solution thus thus              
